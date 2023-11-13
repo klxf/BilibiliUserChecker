@@ -47,7 +47,7 @@ $(function () {
         {
             displayName: "星穹铁道",
             displayIcon: "https://i2.hdslb.com/bfs/face/e76fc676b58f23c6bd9161723f12da00c7e051c5.jpg@240w_240h_1c_1s.webp",
-            keywords: ["互动抽奖 #星穹铁道"],
+            keywords: ["互动抽奖 #崩坏星穹铁道"],
             followings: [1340190821]
         }
         ,
