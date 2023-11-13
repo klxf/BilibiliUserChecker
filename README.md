@@ -2,9 +2,8 @@
 
  B站用户成分查询 / 一键查成分
 
-## Credit
-
-修改自[A畜3畜野狗大杂烩指示器](https://greasyfork.org/zh-CN/scripts/451236)
+- 可查询：关注列表/动态列表/**粉丝牌<sup>NEW</sup>**
+- 生效于：视频评论区/专栏评论区/动态评论区/**个人主页<sup>NEW</sup>**
 
 ## 效果
 
@@ -40,9 +39,17 @@
 | `keywords`    | 识别的关键字     |
 | `followings`  | 关注特点用户的UID |
 
+> [!NOTE]
+> 更新前注意备份`checkers`
+
 ## 计划
 
 - [ ] 在网页增加添加规则的UI
+- [x] 查询范围增加粉丝牌
+
+## Credit
+
+修改自[A畜3畜野狗大杂烩指示器](https://greasyfork.org/zh-CN/scripts/451236)
 
 ## 其他
 

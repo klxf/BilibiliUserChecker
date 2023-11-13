@@ -18,6 +18,7 @@
 
 const blog = 'https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?&host_mid='
 const followapi = 'https://api.bilibili.com/x/relation/followings?vmid='
+const medalapi = 'https://api.live.bilibili.com/xlive/web-ucenter/user/MedalWall?target_id='
 
 $(function () {
     'use strict';
@@ -60,7 +61,8 @@ $(function () {
         {
             displayName: "王者荣耀",
             displayIcon: "https://i2.hdslb.com/bfs/face/effbafff589a27f02148d15bca7e97031a31d772.jpg@240w_240h_1c_1s.jpg",
-            keywords: ["互动抽奖 #王者荣耀","王者荣耀"]
+            keywords: ["互动抽奖 #王者荣耀","王者荣耀"],
+            followings: [57863910]
         }
         ,
         {
@@ -131,8 +133,6 @@ $(function () {
         if(UID == undefined && window.location.hostname == "space.bilibili.com")
             UID = $("div.info-personal > div.info-wrap:first-child > span.info-value:last-child").text()
 
-        console.log(UID + ', ' + name)
-
         if (checked[UID]) {
             // 已经缓存过了
             for(let setting of checked[UID]) {
@@ -165,65 +165,99 @@ $(function () {
                             },
                             onload: followingRes => {
                                 if(followingRes.status === 200) {
-                                    // 查询关注列表
-                                    let followingData = JSON.parse(followingRes.response)
-                                    // 可能无权限
-                                    let following = followingData.code == 0 ? followingData.data.list.map(it => it.mid) : []
+									// 获取勋章列表
+									GM_xmlhttpRequest({
+										method: "get",
+										url: medalapi + UID,
+										data: '',
+										headers:  {
+											'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
+										},
+										onload: medalRes => {
+											if(medalRes.status === 200) {
+												// 查询关注列表
+												let followingData = JSON.parse(followingRes.response)
+												// 可能无权限
+												let following = followingData.code == 0 ? followingData.data.list.map(it => it.mid) : []
+												
+												// 查询并拼接动态数据
+												let st = JSON.stringify(JSON.parse(res.response).data.items)
+												
+												// 获取勋章列表
+												let medalData = JSON.parse(medalRes.response)
+												let medals = medalData.code == 0 ? medalData.data.list.map(it => it.medal_info.target_id) : []
 
-                                    // 查询并拼接动态数据
-                                    let st = JSON.stringify(JSON.parse(res.response).data.items)
+												// 找到的匹配内容
+												let found = []
+												for(let setting of checkers) {
+													// 检查动态内容
+													if (setting.keywords)
+														if (setting.keywords.find(keyword => st.includes(keyword))) {
+															if (found.indexOf(setting) < 0)
+																found.push(setting)
+															continue;
+														}
 
-                                    // 找到的匹配内容
-                                    let found = []
-                                    for(let setting of checkers) {
-                                        // 检查动态内容
-                                        if (setting.keywords)
-                                            if (setting.keywords.find(keyword => st.includes(keyword))) {
-                                                if (found.indexOf(setting) < 0)
-                                                    found.push(setting)
-                                                continue;
-                                            }
+													// 检查关注列表
+													if (setting.followings)
+														for(let mid of setting.followings) {
+															if (following.indexOf(mid) >= 0) {
+																if (found.indexOf(setting) < 0)
+																	found.push(setting)
+																continue;
+															}
+														}
 
-                                        // 检查关注列表
-                                        if (setting.followings)
-                                            for(let mid of setting.followings) {
-                                                if (following.indexOf(mid) >= 0) {
-                                                    if (found.indexOf(setting) < 0)
-                                                        found.push(setting)
-                                                    continue;
-                                                }
-                                            }
-                                    }
+													// 检查勋章列表
+													if (setting.followings)
+														for(let target_id of setting.followings) {
+															if (medals.indexOf(target_id) >= 0) {
+																if (found.indexOf(setting) < 0)
+																	found.push(setting)
+																continue;
+															}
+														}
+												}
 
-                                    // 添加标签
-                                    if (found.length > 0) {
-                                        if (!printed) {
-                                            console.log(JSON.parse(res.response).data)
-                                            printed = true
-                                        }
-                                        checked[UID] = found
+												// 添加标签
+												if (found.length > 0) {
+													if (!printed) {
+														// console.log(JSON.parse(res.response).data)
+														printed = true
+													}
+													checked[UID] = found
 
-                                        // 给所有用到的地方添加标签
-                                        for (let element of checking[UID]) {
-                                            for(let setting of found) {
-                                                addtag(UID, element, setting)
-                                            }
-                                        }
-                                        loadingElement.parent().remove()
-                                    } else {
-                                        loadingElement.text('无')
-                                    }
+													// 给所有用到的地方添加标签
+													for (let element of checking[UID]) {
+														for(let setting of found) {
+															addtag(UID, element, setting)
+														}
+													}
+													loadingElement.parent().remove()
+												} else {
+													loadingElement.text('无')
+												}
+											} else {
+												loadingElement.text('失败')
+											}
+
+											delete checking[UID]
+										},
+										onerror: err => {
+											loadingElement.text('失败')
+											delete checking[UID]
+										}
+									})
 
                                 } else {
                                     loadingElement.text('失败')
+									delete checking[UID]
                                 }
-
-                                delete checking[UID]
                             },
                             onerror: err => {
                                 loadingElement.text('失败')
                                 delete checking[UID]
-                            },
+                            }
                         })
 
 
@@ -235,7 +269,7 @@ $(function () {
                 onerror: err => {
                     loadingElement.text('失败')
                     delete checking[UID]
-                },
+                }
             });
         }
     }
