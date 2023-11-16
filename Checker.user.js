@@ -137,8 +137,8 @@ $(function () {
             // 已经缓存过了
             for(let setting of checked[UID]) {
                 addtag(UID, element, setting)
-                loadingElement.parent().remove()
             }
+            loadingElement.parent().remove()
         } else if (checking[UID] != undefined) {
             // 检查中
             if (checking[UID].indexOf(element) < 0)
