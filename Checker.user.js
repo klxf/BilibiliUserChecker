@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         B站用户成分指示器
-// @version      2.0
+// @version      2.1
 // @author       klxf, trychen, miayoshi
 // @namespace    https://github.com/klxf
 // @license      GPLv3
@@ -496,6 +496,8 @@ $(function () {
 			var followingsInput = document.getElementById("followingsInput");
 			var saveButton = document.getElementById("saveButton");
 
+			var update_token = 0;
+
 			saveButton.addEventListener("click", function() {
 				var displayName = displayNameInput.value;
 				var displayIcon = displayIconInput.value;
@@ -529,6 +531,8 @@ $(function () {
 					renderCheckers();
 					clearInputs();
 				}
+				
+				update_token = 1;
 			});
 
 			function findChecker(displayName) {
@@ -600,6 +604,8 @@ $(function () {
 						break;
 					}
 				}
+
+				update_token = 1;
 
 				renderCheckers();
 			}
