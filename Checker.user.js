@@ -673,7 +673,11 @@ $(function () {
             if ( ! timeControl) {
                 timeControl = setInterval ( function () {
                     listenKey(selectorTxt,actionFunction,bWaitOnce,iframeSelector);
-                    GM_setValue("settings", checker_list)
+                    if(update_token == 1) {
+                        console.log("更新")
+                        GM_setValue("settings", checker_list)
+                        update_token = 0
+                    }
                     checkers = GM_getValue("settings")
                 }, 300);
                 controlObj [controlKey] = timeControl;
