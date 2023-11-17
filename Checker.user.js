@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         B站用户成分指示器
-// @version      2.1
+// @version      2.2
 // @author       klxf, trychen, miayoshi
 // @namespace    https://github.com/klxf
 // @license      GPLv3
