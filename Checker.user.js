@@ -381,18 +381,18 @@ $(function () {
         margin-bottom: 10px;
     }
 
-    .icon {
+    .checker .icon {
         width: 50px;
         height: 50px;
         margin-right: 10px;
     }
 
-    .keywords {
+    .checker keywords {
         font-size: 14px;
         color: gray;
     }
 
-    .followings {
+    .checker .followings {
         font-size: 14px;
         color: blue;
     }
