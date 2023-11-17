@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         B站用户成分指示器
-// @version      1.0
+// @version      2.0
 // @author       klxf, trychen, miayoshi
 // @namespace    https://github.com/klxf
 // @license      GPLv3
@@ -12,6 +12,9 @@
 // @match        https://www.bilibili.com/opus/*
 // @icon         https://static.hdslb.com/images/favicon.ico
 // @connect      bilibili.com
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_registerMenuCommand
 // @grant        GM_xmlhttpRequest
 // @require      https://cdn.bootcdn.net/ajax/libs/jquery/3.6.1/jquery.min.js
 // ==/UserScript==
@@ -22,7 +25,7 @@ const medalapi = 'https://api.live.bilibili.com/xlive/web-ucenter/user/MedalWall
 
 $(function () {
     'use strict';
-    const checkers = [
+    const default_checkers = [
         {
             displayName: "永雏塔菲",
             displayIcon: "https://i1.hdslb.com/bfs/face/4907464999fbf2f2a6f9cc8b7352fceb6b3bfec3.jpg@240w_240h_1c_1s.jpg",
@@ -76,12 +79,23 @@ $(function () {
     const checking = {}
     var printed = false
 
+    // 读取保存的设置，若不存在则读取默认
+    if(GM_getValue("settings") == undefined)
+        GM_setValue("settings", default_checkers)
+    var checkers = GM_getValue("settings")
+
+    // 注册设置按钮
+    addSettingsDialog()
+    GM_registerMenuCommand('设置', openSettingsMenu);
+    function openSettingsMenu() {
+        $(".checkerSettings").show()
+    }
+
     // 监听用户ID元素出现
     listenKey(".user-name", addButton);
     listenKey(".sub-user-name", addButton);
     listenKey(".user .name", addButton);
     listenKey(".h #h-name", addSpaceButton);
-
 
     // 添加查成分按钮（评论区）
     function addButton(element) {
@@ -180,10 +194,10 @@ $(function () {
 												let followingData = JSON.parse(followingRes.response)
 												// 可能无权限
 												let following = followingData.code == 0 ? followingData.data.list.map(it => it.mid) : []
-												
+
 												// 查询并拼接动态数据
 												let st = JSON.stringify(JSON.parse(res.response).data.items)
-												
+
 												// 获取勋章列表
 												let medalData = JSON.parse(medalRes.response)
 												let medals = medalData.code == 0 ? medalData.data.list.map(it => it.medal_info.target_id) : []
@@ -311,6 +325,131 @@ $(function () {
     .user-info .user-level {
       z-index: 1;
     }
+    .checkerSettings {
+		display: none;
+		position: fixed;
+		top: 10%;
+    	left: 10px;
+    	height: 80%;
+    	width: 400px;
+		border-radius: 10px;
+		overflow-y: auto;
+		background: #fff;
+		z-index: 10;
+        box-shadow: 2px 2px 5px 0px rgba(0, 0, 0, .5);
+	}
+
+
+	.menuTab {
+    	position: fixed;
+        background: #fff;
+	}
+	.menuTitle {
+		margin: 10px 20px;
+        width: 350px;
+		padding-left: 5px;
+		font-size: 24px;
+		font-weight: bold;
+		border-left: var(--Lb5) 5px solid;
+	}
+	.menuItems {
+		margin: 50px 20px;
+		padding-left: 5px;
+	}
+	.menuItems p {
+    	margin: 5px 0;
+	}
+	.menuItems #save_settings {
+    	margin: 0 20px 17px 0;
+		background: var(--Lb5);
+    	box-shadow: 0 0 0 2px #fff;
+    	color: #fff;
+    	cursor: pointer;
+    	display: inline-block;
+    	text-align: center;
+    	width: 76px;
+    	line-height: 30px;
+		border: 0;
+	}
+	.menuItems #save_settings:hover {
+		background: var(--Lb4);
+	}
+
+    .checker {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .icon {
+        width: 50px;
+        height: 50px;
+        margin-right: 10px;
+    }
+
+    .keywords {
+        font-size: 14px;
+        color: gray;
+    }
+
+    .followings {
+        font-size: 14px;
+        color: blue;
+    }
+
+    .input-container {
+        margin-bottom: 10px;
+    }
+
+    .input-label {
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .input-field {
+        width: 100%;
+        padding: 5px;
+        margin-bottom: 10px;
+    }
+
+    .save-button {
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    .save-button:hover {
+        background-color: #45a049;
+    }
+
+    .edit-button {
+        padding: 5px 10px;
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+
+    .edit-button:hover {
+        background-color: #0b7dda;
+    }
+
+    .delete-button {
+        padding: 5px 10px;
+        background-color: #f32121;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+
+    .delete-button:hover {
+        background-color: #da0b15;
+    }
+
    `)
 
     function addGlobalStyle(css) {
@@ -321,6 +460,172 @@ $(function () {
         style.type = 'text/css';
         style.innerHTML = css;
         head.appendChild(style);
+    }
+
+    // 添加设置窗口
+    function addSettingsDialog() {
+        let menu = `<div class="checkerSettings">
+	<div class="menuTab"><div class="menuTitle">设置菜单<span onClick="this.parentNode.parentNode.parentNode.style.display = 'none'" style="float: right; font-size: 14px;">关闭</span></div></div>
+	<div class="menuItems">
+    		<div class="input-container">
+			<label class="input-label" for="displayNameInput">展示名称：</label>
+			<input id="displayNameInput" class="input-field" type="text">
+		</div>
+		<div class="input-container">
+			<label class="input-label" for="displayIconInput">展示图标链接：</label>
+			<input id="displayIconInput" class="input-field" type="text">
+		</div>
+		<div class="input-container">
+			<label class="input-label" for="keywordsInput">关键词：</label>
+			<input id="keywordsInput" class="input-field" type="text">
+		</div>
+		<div class="input-container">
+			<label class="input-label" for="followingsInput">UID：</label>
+			<input id="followingsInput" class="input-field" type="text">
+		</div>
+		<button id="saveButton" class="save-button">保存</button>
+		<div id="checkersContainer"></div>
+
+		<script>
+			var checker_list = ` + JSON.stringify(GM_getValue("settings")) + `;
+
+			var checkersContainer = document.getElementById("checkersContainer");
+			var displayNameInput = document.getElementById("displayNameInput");
+			var displayIconInput = document.getElementById("displayIconInput");
+			var keywordsInput = document.getElementById("keywordsInput");
+			var followingsInput = document.getElementById("followingsInput");
+			var saveButton = document.getElementById("saveButton");
+
+			saveButton.addEventListener("click", function() {
+				var displayName = displayNameInput.value;
+				var displayIcon = displayIconInput.value;
+				var keywords = keywordsInput.value.split(",").map(function(keyword) {
+					return keyword.trim();
+				});
+				var followings = followingsInput.value.split(",").map(function(following) {
+					return parseInt(following.trim());
+				});
+
+				if (displayName && displayIcon && keywords.length > 0 && followings.length > 0) {
+					var existingChecker = findChecker(displayName);
+
+					if (existingChecker) {
+						// Update the properties of the existing checker
+						existingChecker.displayIcon = displayIcon;
+						existingChecker.keywords = keywords;
+						existingChecker.followings = followings;
+					} else {
+						// Create a new checker and add it to the checkers array
+						var newChecker = {
+							displayName: displayName,
+							displayIcon: displayIcon,
+							keywords: keywords,
+							followings: followings
+						};
+
+						checker_list.push(newChecker);
+					}
+
+					renderCheckers();
+					clearInputs();
+				}
+			});
+
+			function findChecker(displayName) {
+				for (var i = 0; i < checker_list.length; i++) {
+					if (checker_list[i].displayName === displayName) {
+						return checker_list[i];
+					}
+				}
+				return null;
+			}
+
+
+
+			function renderCheckers() {
+				checkersContainer.innerHTML = "";
+
+				checker_list.forEach(function(checker, index) {
+					var checkerElement = document.createElement("div");
+					checkerElement.className = "checker";
+
+					var iconElement = document.createElement("img");
+					iconElement.className = "icon";
+					iconElement.src = checker.displayIcon;
+
+					var displayNameElement = document.createElement("span");
+					displayNameElement.textContent = checker.displayName;
+
+					var keywordsElement = document.createElement("p");
+					keywordsElement.className = "keywords";
+					keywordsElement.textContent = checker.keywords.join(", ");
+
+					var followingsElement = document.createElement("p");
+					followingsElement.className = "followings";
+					followingsElement.textContent = checker.followings.join(", ");
+
+					var editButton = document.createElement("button");
+					editButton.className = "edit-button";
+					editButton.textContent = "编";
+					editButton.addEventListener("click", function() {
+						fillInputs(checker);
+					});
+
+					var deleteButton = document.createElement("button");
+					deleteButton.className = "delete-button";
+					deleteButton.textContent = "删";
+					deleteButton.addEventListener("click", createDeleteHandler(checker.displayName));
+
+					checkerElement.appendChild(iconElement);
+					checkerElement.appendChild(displayNameElement);
+					checkerElement.appendChild(keywordsElement);
+					checkerElement.appendChild(followingsElement);
+					checkerElement.appendChild(editButton);
+					checkerElement.appendChild(deleteButton);
+
+					checkersContainer.appendChild(checkerElement);
+				});
+			}
+
+			function createDeleteHandler(displayName) {
+				return function() {
+					deleteChecker(displayName);
+				};
+			}
+
+			function deleteChecker(displayName) {
+				for (var i = 0; i < checker_list.length; i++) {
+					if (checker_list[i].displayName === displayName) {
+						checker_list.splice(i, 1);
+						break;
+					}
+				}
+
+				renderCheckers();
+			}
+
+			function fillInputs(checker) {
+				displayNameInput.value = checker.displayName;
+				displayIconInput.value = checker.displayIcon;
+				keywordsInput.value = checker.keywords.join(", ");
+				followingsInput.value = checker.followings.join(", ");
+			}
+
+
+
+			function clearInputs() {
+				displayNameInput.value = "";
+				displayIconInput.value = "";
+				keywordsInput.value = "";
+				followingsInput.value = "";
+			}
+
+			renderCheckers();
+		</script>
+	</div>
+</div>
+        `
+        $("body").append(menu)
     }
 
     function listenKey(selectorTxt, actionFunction, bWaitOnce, iframeSelector) {
@@ -362,6 +667,8 @@ $(function () {
             if ( ! timeControl) {
                 timeControl = setInterval ( function () {
                     listenKey(selectorTxt,actionFunction,bWaitOnce,iframeSelector);
+                    GM_setValue("settings", checker_list)
+                    checkers = GM_getValue("settings")
                 }, 300);
                 controlObj [controlKey] = timeControl;
             }
