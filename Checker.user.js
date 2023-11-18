@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         B站用户成分指示器
-// @version      2.2
+// @version      2.3
 // @author       klxf, trychen, miayoshi
 // @namespace    https://github.com/klxf
 // @license      GPLv3
@@ -9,6 +9,7 @@
 // @match        https://t.bilibili.com/*
 // @match        https://www.bilibili.com/read/*
 // @match        https://www.bilibili.com/video/*
+// @match        https://www.bilibili.com/v/topic/detail/*
 // @match        https://www.bilibili.com/opus/*
 // @icon         https://static.hdslb.com/images/favicon.ico
 // @connect      bilibili.com
@@ -110,7 +111,7 @@ $(function () {
 
         element.after(node)
     }
-	// 添加查成分按钮（个人主页）
+    // 添加查成分按钮（个人主页）
     function addSpaceButton(element) {
         let box = $(`<div><div class="section"><h3 class="section-title">成分查询</h3><div style="margin: 30px 0 15px; text-align: center;" class="composition-checkable"></div></div></div>`)
         let node = $(`<div class="iBadge launcher">
@@ -180,93 +181,93 @@ $(function () {
                             },
                             onload: followingRes => {
                                 if(followingRes.status === 200) {
-									// 获取勋章列表
-									GM_xmlhttpRequest({
-										method: "get",
-										url: medalapi + UID,
-										data: '',
-										headers:  {
-											'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
-										},
-										onload: medalRes => {
-											if(medalRes.status === 200) {
-												// 查询关注列表
-												let followingData = JSON.parse(followingRes.response)
-												// 可能无权限
-												let following = followingData.code == 0 ? followingData.data.list.map(it => it.mid) : []
+                                    // 获取勋章列表
+                                    GM_xmlhttpRequest({
+                                        method: "get",
+                                        url: medalapi + UID,
+                                        data: '',
+                                        headers:  {
+                                            'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
+                                        },
+                                        onload: medalRes => {
+                                            if(medalRes.status === 200) {
+                                                // 查询关注列表
+                                                let followingData = JSON.parse(followingRes.response)
+                                                // 可能无权限
+                                                let following = followingData.code == 0 ? followingData.data.list.map(it => it.mid) : []
 
-												// 查询并拼接动态数据
-												let st = JSON.stringify(JSON.parse(res.response).data.items)
+                                                // 查询并拼接动态数据
+                                                let st = JSON.stringify(JSON.parse(res.response).data.items)
 
-												// 获取勋章列表
-												let medalData = JSON.parse(medalRes.response)
-												let medals = medalData.code == 0 ? medalData.data.list.map(it => it.medal_info.target_id) : []
+                                                // 获取勋章列表
+                                                let medalData = JSON.parse(medalRes.response)
+                                                let medals = medalData.code == 0 ? medalData.data.list.map(it => it.medal_info.target_id) : []
 
-												// 找到的匹配内容
-												let found = []
-												for(let setting of checkers) {
-													// 检查动态内容
-													if (setting.keywords)
-														if (setting.keywords.find(keyword => st.includes(keyword))) {
-															if (found.indexOf(setting) < 0)
-																found.push(setting)
-															continue;
-														}
+                                                // 找到的匹配内容
+                                                let found = []
+                                                for(let setting of checkers) {
+                                                    // 检查动态内容
+                                                    if (setting.keywords)
+                                                        if (setting.keywords.find(keyword => st.includes(keyword))) {
+                                                            if (found.indexOf(setting) < 0)
+                                                                found.push(setting)
+                                                            continue;
+                                                        }
 
-													// 检查关注列表
-													if (setting.followings)
-														for(let mid of setting.followings) {
-															if (following.indexOf(mid) >= 0) {
-																if (found.indexOf(setting) < 0)
-																	found.push(setting)
-																continue;
-															}
-														}
+                                                    // 检查关注列表
+                                                    if (setting.followings)
+                                                        for(let mid of setting.followings) {
+                                                            if (following.indexOf(mid) >= 0) {
+                                                                if (found.indexOf(setting) < 0)
+                                                                    found.push(setting)
+                                                                continue;
+                                                            }
+                                                        }
 
-													// 检查勋章列表
-													if (setting.followings)
-														for(let target_id of setting.followings) {
-															if (medals.indexOf(target_id) >= 0) {
-																if (found.indexOf(setting) < 0)
-																	found.push(setting)
-																continue;
-															}
-														}
-												}
+                                                    // 检查勋章列表
+                                                    if (setting.followings)
+                                                        for(let target_id of setting.followings) {
+                                                            if (medals.indexOf(target_id) >= 0) {
+                                                                if (found.indexOf(setting) < 0)
+                                                                    found.push(setting)
+                                                                continue;
+                                                            }
+                                                        }
+                                                }
 
-												// 添加标签
-												if (found.length > 0) {
-													if (!printed) {
-														// console.log(JSON.parse(res.response).data)
-														printed = true
-													}
-													checked[UID] = found
+                                                // 添加标签
+                                                if (found.length > 0) {
+                                                    if (!printed) {
+                                                        // console.log(JSON.parse(res.response).data)
+                                                        printed = true
+                                                    }
+                                                    checked[UID] = found
 
-													// 给所有用到的地方添加标签
-													for (let element of checking[UID]) {
-														for(let setting of found) {
-															addtag(UID, element, setting)
-														}
-													}
-													loadingElement.parent().remove()
-												} else {
-													loadingElement.text('无')
-												}
-											} else {
-												loadingElement.text('失败')
-											}
+                                                    // 给所有用到的地方添加标签
+                                                    for (let element of checking[UID]) {
+                                                        for(let setting of found) {
+                                                            addtag(UID, element, setting)
+                                                        }
+                                                    }
+                                                    loadingElement.parent().remove()
+                                                } else {
+                                                    loadingElement.text('无')
+                                                }
+                                            } else {
+                                                loadingElement.text('失败')
+                                            }
 
-											delete checking[UID]
-										},
-										onerror: err => {
-											loadingElement.text('失败')
-											delete checking[UID]
-										}
-									})
+                                            delete checking[UID]
+                                        },
+                                        onerror: err => {
+                                            loadingElement.text('失败')
+                                            delete checking[UID]
+                                        }
+                                    })
 
                                 } else {
                                     loadingElement.text('失败')
-									delete checking[UID]
+                                    delete checking[UID]
                                 }
                             },
                             onerror: err => {
@@ -326,92 +327,76 @@ $(function () {
       z-index: 1;
     }
     .checkerSettings {
-		display: none;
-		position: fixed;
-		top: 10%;
-    	left: 10px;
-    	height: 80%;
-    	width: 400px;
-		border-radius: 10px;
-		overflow-y: auto;
-		background: #fff;
-		z-index: 10;
-        box-shadow: 2px 2px 5px 0px rgba(0, 0, 0, .5);
-	}
-
-
-	.menuTab {
-    	position: fixed;
+        display: none;
+        position: fixed;
+        top: 10%;
+        left: 10px;
+        height: 80%;
+        width: 400px;
+        overflow-y: auto;
         background: #fff;
-	}
-	.menuTitle {
-		margin: 10px 20px;
-        width: 350px;
-		padding-left: 5px;
-		font-size: 24px;
-		font-weight: bold;
-		border-left: var(--Lb5) 5px solid;
-	}
-	.menuItems {
-		margin: 50px 20px;
-		padding-left: 5px;
-	}
-	.menuItems p {
-    	margin: 5px 0;
-	}
-	.menuItems #save_settings {
-    	margin: 0 20px 17px 0;
-		background: var(--Lb5);
-    	box-shadow: 0 0 0 2px #fff;
-    	color: #fff;
-    	cursor: pointer;
-    	display: inline-block;
-    	text-align: center;
-    	width: 76px;
-    	line-height: 30px;
-		border: 0;
-	}
-	.menuItems #save_settings:hover {
-		background: var(--Lb4);
-	}
-
-    .checker {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
+        z-index: 10;
+        box-shadow: 2px 2px 5px 0px rgba(0, 0, 0, .5);
     }
-
+    .menuTab {
+        position: fixed;
+        background: #fff;
+    }
+    .menuTitle {
+        margin: 10px 20px;
+        width: 350px;
+        padding-left: 5px;
+        font-size: 24px;
+        font-weight: bold;
+        border-left: var(--Lb5) 5px solid;
+    }
+    .menuItems {
+        margin: 60px 20px;
+        padding-left: 5px;
+    }
+    .menuItems p {
+        margin: 5px 0;
+    }
+    .checker {
+        margin-bottom: 10px;
+        padding: 5px;
+    }
+    .checker:hover {
+        background: #eee;
+    }
     .checker .icon {
         width: 50px;
         height: 50px;
         margin-right: 10px;
     }
-
-    .checker keywords {
+    .checker .displayName {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .checker .keywords {
         font-size: 14px;
         color: gray;
     }
-
     .checker .followings {
         font-size: 14px;
         color: blue;
     }
-
     .input-container {
         margin-bottom: 10px;
     }
-
     .input-label {
         display: block;
         margin-bottom: 5px;
     }
-
     .input-field {
         width: 100%;
         padding: 5px;
         margin-bottom: 10px;
     }
-
+    .input-field:invalid {
+        background-color: lightpink;
+    }
     .save-button {
         padding: 10px 20px;
         background-color: #4CAF50;
@@ -419,11 +404,9 @@ $(function () {
         border: none;
         cursor: pointer;
     }
-
     .save-button:hover {
         background-color: #45a049;
     }
-
     .edit-button {
         padding: 5px 10px;
         background-color: #2196F3;
@@ -431,12 +414,11 @@ $(function () {
         border: none;
         cursor: pointer;
         margin-left: 10px;
+        float: right;
     }
-
     .edit-button:hover {
         background-color: #0b7dda;
     }
-
     .delete-button {
         padding: 5px 10px;
         background-color: #f32121;
@@ -444,12 +426,11 @@ $(function () {
         border: none;
         cursor: pointer;
         margin-left: 10px;
+        float: right;
     }
-
     .delete-button:hover {
         background-color: #da0b15;
     }
-
    `)
 
     function addGlobalStyle(css) {
@@ -465,170 +446,171 @@ $(function () {
     // 添加设置窗口
     function addSettingsDialog() {
         let menu = `<div class="checkerSettings">
-	<div class="menuTab"><div class="menuTitle">设置菜单<span onClick="this.parentNode.parentNode.parentNode.style.display = 'none'" style="float: right; font-size: 14px;">关闭</span></div></div>
-	<div class="menuItems">
-    		<div class="input-container">
-			<label class="input-label" for="displayNameInput">展示名称：</label>
-			<input id="displayNameInput" class="input-field" type="text">
-		</div>
-		<div class="input-container">
-			<label class="input-label" for="displayIconInput">展示图标链接：</label>
-			<input id="displayIconInput" class="input-field" type="text">
-		</div>
-		<div class="input-container">
-			<label class="input-label" for="keywordsInput">关键词：</label>
-			<input id="keywordsInput" class="input-field" type="text">
-		</div>
-		<div class="input-container">
-			<label class="input-label" for="followingsInput">UID：</label>
-			<input id="followingsInput" class="input-field" type="text">
-		</div>
-		<button id="saveButton" class="save-button">保存</button>
-		<div id="checkersContainer"></div>
+    <div class="menuTab"><div class="menuTitle">设置菜单<span onClick="this.parentNode.parentNode.parentNode.style.display = 'none'" style="float: right; font-size: 14px;">关闭</span></div></div>
+    <div class="menuItems">
+            <div class="input-container">
+            <label class="input-label" for="displayNameInput">展示名称：</label>
+            <input id="displayNameInput" class="input-field" type="text">
+        </div>
+        <div class="input-container">
+            <label class="input-label" for="displayIconInput">展示图标链接：</label>
+            <input id="displayIconInput" class="input-field" type="text" placeholder="以https://或http://开头" pattern="^((http://)|(https://)).*$">
+        </div>
+        <div class="input-container">
+            <label class="input-label" for="keywordsInput">关键词：</label>
+            <input id="keywordsInput" class="input-field" type="text" placeholder="（可选）可输入多个，使用英文逗号分割">
+        </div>
+        <div class="input-container">
+            <label class="input-label" for="followingsInput">UID：</label>
+            <input id="followingsInput" class="input-field" type="text" placeholder="（可选）可输入多个，使用英文逗号分割" pattern="^[0-9, ]+$">
+        </div>
+        <button id="saveButton" class="save-button">保存</button>
+        <div id="checkersContainer"></div>
 
-		<script>
-			var checker_list = ` + JSON.stringify(GM_getValue("settings")) + `;
+        <script>
+            var checker_list = ` + JSON.stringify(GM_getValue("settings")) + `;
 
-			var checkersContainer = document.getElementById("checkersContainer");
-			var displayNameInput = document.getElementById("displayNameInput");
-			var displayIconInput = document.getElementById("displayIconInput");
-			var keywordsInput = document.getElementById("keywordsInput");
-			var followingsInput = document.getElementById("followingsInput");
-			var saveButton = document.getElementById("saveButton");
+            var checkersContainer = document.getElementById("checkersContainer");
+            var displayNameInput = document.getElementById("displayNameInput");
+            var displayIconInput = document.getElementById("displayIconInput");
+            var keywordsInput = document.getElementById("keywordsInput");
+            var followingsInput = document.getElementById("followingsInput");
+            var saveButton = document.getElementById("saveButton");
 
-			var update_token = 0;
+            var update_token = 0;
 
-			saveButton.addEventListener("click", function() {
-				var displayName = displayNameInput.value;
-				var displayIcon = displayIconInput.value;
-				var keywords = keywordsInput.value.split(",").map(function(keyword) {
-					return keyword.trim();
-				});
-				var followings = followingsInput.value.split(",").map(function(following) {
-					return parseInt(following.trim());
-				});
+            saveButton.addEventListener("click", function() {
+                var displayName = displayNameInput.value;
+                var displayIcon = displayIconInput.value;
+                var keywords = keywordsInput.value.split(",").map(function(keyword) {
+                    return keyword.trim();
+                });
+                var followings = followingsInput.value.split(",").map(function(following) {
+                    return parseInt(following.trim());
+                });
 
-				if (displayName && displayIcon && keywords.length > 0 && followings.length > 0) {
-					var existingChecker = findChecker(displayName);
+                if (displayName && displayIcon && keywords.length > 0 && followings.length > 0) {
+                    var existingChecker = findChecker(displayName);
 
-					if (existingChecker) {
-						// Update the properties of the existing checker
-						existingChecker.displayIcon = displayIcon;
-						existingChecker.keywords = keywords;
-						existingChecker.followings = followings;
-					} else {
-						// Create a new checker and add it to the checkers array
-						var newChecker = {
-							displayName: displayName,
-							displayIcon: displayIcon,
-							keywords: keywords,
-							followings: followings
-						};
+                    if (existingChecker) {
+                        // Update the properties of the existing checker
+                        existingChecker.displayIcon = displayIcon;
+                        existingChecker.keywords = keywords;
+                        existingChecker.followings = followings;
+                    } else {
+                        // Create a new checker and add it to the checkers array
+                        var newChecker = {
+                            displayName: displayName,
+                            displayIcon: displayIcon,
+                            keywords: keywords,
+                            followings: followings
+                        };
 
-						checker_list.push(newChecker);
-					}
+                        checker_list.push(newChecker);
+                    }
 
-					renderCheckers();
-					clearInputs();
-				}
-				
-				update_token = 1;
-			});
+                    renderCheckers();
+                    clearInputs();
+                }
+                
+                update_token = 1;
+            });
 
-			function findChecker(displayName) {
-				for (var i = 0; i < checker_list.length; i++) {
-					if (checker_list[i].displayName === displayName) {
-						return checker_list[i];
-					}
-				}
-				return null;
-			}
-
-
-
-			function renderCheckers() {
-				checkersContainer.innerHTML = "";
-
-				checker_list.forEach(function(checker, index) {
-					var checkerElement = document.createElement("div");
-					checkerElement.className = "checker";
-
-					var iconElement = document.createElement("img");
-					iconElement.className = "icon";
-					iconElement.src = checker.displayIcon;
-
-					var displayNameElement = document.createElement("span");
-					displayNameElement.textContent = checker.displayName;
-
-					var keywordsElement = document.createElement("p");
-					keywordsElement.className = "keywords";
-					keywordsElement.textContent = checker.keywords.join(", ");
-
-					var followingsElement = document.createElement("p");
-					followingsElement.className = "followings";
-					followingsElement.textContent = checker.followings.join(", ");
-
-					var editButton = document.createElement("button");
-					editButton.className = "edit-button";
-					editButton.textContent = "编";
-					editButton.addEventListener("click", function() {
-						fillInputs(checker);
-					});
-
-					var deleteButton = document.createElement("button");
-					deleteButton.className = "delete-button";
-					deleteButton.textContent = "删";
-					deleteButton.addEventListener("click", createDeleteHandler(checker.displayName));
-
-					checkerElement.appendChild(iconElement);
-					checkerElement.appendChild(displayNameElement);
-					checkerElement.appendChild(keywordsElement);
-					checkerElement.appendChild(followingsElement);
-					checkerElement.appendChild(editButton);
-					checkerElement.appendChild(deleteButton);
-
-					checkersContainer.appendChild(checkerElement);
-				});
-			}
-
-			function createDeleteHandler(displayName) {
-				return function() {
-					deleteChecker(displayName);
-				};
-			}
-
-			function deleteChecker(displayName) {
-				for (var i = 0; i < checker_list.length; i++) {
-					if (checker_list[i].displayName === displayName) {
-						checker_list.splice(i, 1);
-						break;
-					}
-				}
-
-				update_token = 1;
-
-				renderCheckers();
-			}
-
-			function fillInputs(checker) {
-				displayNameInput.value = checker.displayName;
-				displayIconInput.value = checker.displayIcon;
-				keywordsInput.value = checker.keywords.join(", ");
-				followingsInput.value = checker.followings.join(", ");
-			}
+            function findChecker(displayName) {
+                for (var i = 0; i < checker_list.length; i++) {
+                    if (checker_list[i].displayName === displayName) {
+                        return checker_list[i];
+                    }
+                }
+                return null;
+            }
 
 
 
-			function clearInputs() {
-				displayNameInput.value = "";
-				displayIconInput.value = "";
-				keywordsInput.value = "";
-				followingsInput.value = "";
-			}
+            function renderCheckers() {
+                checkersContainer.innerHTML = "";
 
-			renderCheckers();
-		</script>
-	</div>
+                checker_list.forEach(function(checker, index) {
+                    var checkerElement = document.createElement("div");
+                    checkerElement.className = "checker";
+
+                    var iconElement = document.createElement("img");
+                    iconElement.className = "icon";
+                    iconElement.src = checker.displayIcon;
+
+                    var displayNameElement = document.createElement("span");
+					displayNameElement.className = "displayName";
+                    displayNameElement.textContent = checker.displayName;
+
+                    var keywordsElement = document.createElement("p");
+                    keywordsElement.className = "keywords";
+                    keywordsElement.textContent = checker.keywords.join(", ");
+
+                    var followingsElement = document.createElement("p");
+                    followingsElement.className = "followings";
+                    followingsElement.textContent = checker.followings.join(", ");
+
+                    var editButton = document.createElement("button");
+                    editButton.className = "edit-button";
+                    editButton.textContent = "编";
+                    editButton.addEventListener("click", function() {
+                        fillInputs(checker);
+                    });
+
+                    var deleteButton = document.createElement("button");
+                    deleteButton.className = "delete-button";
+                    deleteButton.textContent = "删";
+                    deleteButton.addEventListener("click", createDeleteHandler(checker.displayName));
+
+                    checkerElement.appendChild(displayNameElement);
+                    checkerElement.appendChild(iconElement);
+                    checkerElement.appendChild(deleteButton);
+                    checkerElement.appendChild(editButton);
+                    checkerElement.appendChild(keywordsElement);
+                    checkerElement.appendChild(followingsElement);
+
+                    checkersContainer.appendChild(checkerElement);
+                });
+            }
+
+            function createDeleteHandler(displayName) {
+                return function() {
+                    deleteChecker(displayName);
+                };
+            }
+
+            function deleteChecker(displayName) {
+                for (var i = 0; i < checker_list.length; i++) {
+                    if (checker_list[i].displayName === displayName) {
+                        checker_list.splice(i, 1);
+                        break;
+                    }
+                }
+
+                update_token = 1;
+
+                renderCheckers();
+            }
+
+            function fillInputs(checker) {
+                displayNameInput.value = checker.displayName;
+                displayIconInput.value = checker.displayIcon;
+                keywordsInput.value = checker.keywords.join(", ");
+                followingsInput.value = checker.followings.join(", ");
+            }
+
+
+
+            function clearInputs() {
+                displayNameInput.value = "";
+                displayIconInput.value = "";
+                keywordsInput.value = "";
+                followingsInput.value = "";
+            }
+
+            renderCheckers();
+        </script>
+    </div>
 </div>
         `
         $("body").append(menu)
