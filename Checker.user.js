@@ -661,6 +661,7 @@ $(function () {
                             checker_list = importedCheckers;
                             renderCheckers();
                             msgDisplay.textContent = "规则导入成功";
+                            update_token = 1;
                         } else {
                             msgDisplay.textContent = "导入失败: 剪切板内容无效或不完整";
                         }
