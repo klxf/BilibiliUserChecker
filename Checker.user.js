@@ -431,6 +431,31 @@ $(function () {
     .delete-button:hover {
         background-color: #da0b15;
     }
+    .export-button {
+        padding: 5px 10px;
+        background-color: #2196f3;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+    .export-button:hover {
+        background-color: #0b7dda;
+    }
+    .import-button {
+        padding: 5px 10px;
+        background-color: #2196f3;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+    .import-button:hover {
+        background-color: #0b7dda;
+    }
+    #msgDisplay {
+        color: lightpink;
+    }
    `)
 
     function addGlobalStyle(css) {
@@ -466,6 +491,9 @@ $(function () {
         </div>
         <button id="saveButton" class="save-button">保存</button>
         <div id="checkersContainer"></div>
+        <button id="exportButton" class="export-button">导出到剪切板</button>
+        <button id="importButton" class="import-button">从剪切板导入</button>
+        <div id="msgDisplay"></div>
 
         <script>
             var checker_list = ` + JSON.stringify(GM_getValue("settings")) + `;
@@ -525,8 +553,6 @@ $(function () {
                 return null;
             }
 
-
-
             function renderCheckers() {
                 checkersContainer.innerHTML = "";
 
@@ -539,7 +565,7 @@ $(function () {
                     iconElement.src = checker.displayIcon;
 
                     var displayNameElement = document.createElement("span");
-					displayNameElement.className = "displayName";
+                    displayNameElement.className = "displayName";
                     displayNameElement.textContent = checker.displayName;
 
                     var keywordsElement = document.createElement("p");
@@ -599,13 +625,69 @@ $(function () {
                 followingsInput.value = checker.followings.join(", ");
             }
 
-
-
             function clearInputs() {
                 displayNameInput.value = "";
                 displayIconInput.value = "";
                 keywordsInput.value = "";
                 followingsInput.value = "";
+            }
+            
+			var msgDisplay = document.getElementById("msgDisplay");
+            var exportButton = document.getElementById("exportButton");
+            exportButton.addEventListener("click", function() {
+                exportCheckers();
+            });
+			
+            var importButton = document.getElementById("importButton");
+            importButton.addEventListener("click", function() {
+                importCheckers();
+            });
+			
+            function exportCheckers() {
+                var checkersText = JSON.stringify(checker_list, null, 2);
+                navigator.clipboard.writeText(checkersText)
+                    .then(function() {
+                        msgDisplay.textContent = "规则导出成功";
+                    })
+                    .catch(function(error) {
+                        msgDisplay.textContent = "导出失败: " + error;
+                    });
+            }
+            function importCheckers() {
+                navigator.clipboard.readText()
+                    .then(function(text) {
+                        var importedCheckers = JSON.parse(text);
+                        if (validateCheckers(importedCheckers)) {
+                            checker_list = importedCheckers;
+                            renderCheckers();
+                            msgDisplay.textContent = "规则导入成功";
+                        } else {
+                            msgDisplay.textContent = "导入失败: 剪切板内容无效或不完整";
+                        }
+                    })
+                    .catch(function(error) {
+                        msgDisplay.textContent = "导入失败: " + error;
+                    });
+            }
+
+
+            function validateCheckers(checkers) {
+                if (!Array.isArray(checkers)) {
+                    return false;
+                }
+
+                for (var i = 0; i < checkers.length; i++) {
+                    var checker = checkers[i];
+                    if (typeof checker !== "object" ||
+                        !checker.hasOwnProperty("displayIcon") ||
+                        !checker.hasOwnProperty("displayName") ||
+                        !checker.hasOwnProperty("followings") ||
+                        !checker.hasOwnProperty("keywords")) {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
             renderCheckers();
