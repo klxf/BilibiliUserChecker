@@ -583,6 +583,7 @@ $(function () {
                     editButton.textContent = "编";
                     editButton.addEventListener("click", function() {
                         fillInputs(checker);
+                        document.getElementsByClassName("checkerSettings")[0].scrollTo({top: 0,behavior: "smooth"});
                     });
 
                     var deleteButton = document.createElement("button");
