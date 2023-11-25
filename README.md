@@ -15,6 +15,7 @@
 ## 安装
 
 - [Greasy Fork](https://greasyfork.org/zh-CN/scripts/479621)
+- [Github](https://github.com/klxf/BilibiliUserChecker/raw/main/Checker.user.js)
 
 ## 使用
 

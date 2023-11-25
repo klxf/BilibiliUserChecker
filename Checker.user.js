@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name         B站用户成分指示器
 // @version      2.3
-// @author       klxf, trychen, miayoshi
-// @namespace    https://github.com/klxf
-// @license      GPLv3
 // @description  自动标注成分
+// @author       klxf, trychen, miayoshi
+// @license      GPLv3
+// @namespace    https://github.com/klxf
+// @updateURL    https://github.com/klxf/BilibiliUserChecker/raw/main/Checker.user.js
+// @downloadURL  https://github.com/klxf/BilibiliUserChecker/raw/main/Checker.user.js
 // @match        https://space.bilibili.com/*
 // @match        https://t.bilibili.com/*
 // @match        https://www.bilibili.com/read/*
