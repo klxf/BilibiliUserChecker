@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         B站用户成分指示器
-// @version      2.3
+// @version      2.4
 // @description  自动标注成分
 // @author       klxf, trychen, miayoshi
 // @license      GPLv3
@@ -255,6 +255,13 @@ $(function () {
                                                 } else {
                                                     loadingElement.text('无')
                                                 }
+
+                                                // 小孩子瞎写着玩的，不想看到 tips 可以注释掉
+                                                let tips = ""
+                                                if(followingData.code != 0) tips += "无法获取" + name + "的关注列表（" + followingData.code + ": " + followingData.message + "）<br>"
+                                                if(medalData.data.close_space_medal == 1) tips += "无法获取" + name + "的粉丝牌（主页显示被设为隐私）"
+                                                if(tips != "") checkerTip(tips)
+
                                             } else {
                                                 loadingElement.text('失败')
                                             }
@@ -700,6 +707,42 @@ $(function () {
 </div>
         `
         $("body").append(menu)
+    }
+
+    // 创建提示
+    function checkerTip(msg) {
+        // 创建个元素
+        var element = document.createElement('div');
+
+        // 设置显示的文本（HTML）
+        element.innerHTML = msg;
+
+        // 设置元素的样式
+        element.style.position = 'fixed';
+        element.style.top = '50%';
+        element.style.left = '50%';
+        element.style.transform = 'translate(-50%, -50%)';
+        element.style.backgroundColor = 'blue';
+        element.style.position = 'fixed';
+        element.style.zIndex = '12000';
+        element.style.padding = '15px 30px';
+        element.style.color = '#fff';
+        element.style.fontSize = '14px';
+        element.style.textAlign = 'center';
+        element.style.borderRadius = '4px';
+        element.style.boxShadow = '0 2px 4px rgba(0,0,0,.14)';
+        element.style.backgroundColor = 'rgba(0,0,0,.8)';
+        element.style.transition = 'all .5s';
+
+        document.body.appendChild(element);
+
+        element.style.opacity = '1';
+        setTimeout(function() {
+            element.style.opacity = '0';
+            setTimeout(function() {
+                document.body.removeChild(element);
+            }, 500);
+        }, 3000);
     }
 
     function listenKey(selectorTxt, actionFunction, bWaitOnce, iframeSelector) {
